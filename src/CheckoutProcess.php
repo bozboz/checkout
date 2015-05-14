@@ -177,7 +177,24 @@ class CheckoutProcess
 	 */
 	public function redirectToActiveScreen()
 	{
-		return $this->redirectTo($this->getActiveScreen());
+		$activeScreen = $this->screenIdentifiers[count($this->completedScreens)];
+
+		return $this->redirectTo($activeScreen);
+	}
+
+	/**
+	 * Redirect to next screen
+	 *
+	 * @param  string  $identifier
+	 * @return Illiminate\Http\RedirectResponse
+	 */
+	public function redirectToNextScreen($identifier)
+	{
+		$index = array_search($identifier, $this->screenIdentifiers);
+
+		$nextScreen = $this->screenIdentifiers[$index + 1];
+
+		return $this->redirectTo($nextScreen);
 	}
 
 	/**
@@ -211,7 +228,7 @@ class CheckoutProcess
 			$this->store->push('completed_screens', $identifier);
 		}
 
-		return $this->redirectTo($this->getNextScreen($identifier));
+		return $this->redirectToNextScreen($identifier);
 	}
 
 	/**
@@ -258,29 +275,5 @@ class CheckoutProcess
 	protected function redirectTo($identifier)
 	{
 		return $this->redirect->action($this->viewAction, $identifier);
-	}
-
-	/**
-	 * Determine active screen, and return its identifier
-	 *
-	 * @return string
-	 */
-	protected function getActiveScreen()
-	{
-		return $this->screenIdentifiers[count($this->completedScreens)];
-	}
-
-	/**
-	 * Get the next screen after the current screen $identifier, and return its
-	 * identifier
-	 *
-	 * @param  string  $identifier
-	 * @return string
-	 */
-	protected function getNextScreen($identifier)
-	{
-		$index = array_search($identifier, $this->screenIdentifiers);
-
-		return $this->screenIdentifiers[$index + 1];
 	}
 }
