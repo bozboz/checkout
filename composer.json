@@ -1,0 +1,8 @@
+{
+	"name": "bozboz/checkout",
+	"autoload": {
+		"psr-4": {
+			"Bozboz\\Ecommerce\\Checkout\\": "src"
+		}
+	}
+}
