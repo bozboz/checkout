@@ -137,6 +137,17 @@ class CheckoutProcess
 	}
 
 	/**
+	 * Check if screen can be skipped, by its identifier
+	 *
+	 * @param  string  $identifier
+	 * @return boolean
+	 */
+	public function canSkipScreen($identifier)
+	{
+		return $this->getScreen($identifier)->canSkip();
+	}
+
+	/**
 	 * Check if screen is complete, by its identifier
 	 *
 	 * @param  string  $identifier
