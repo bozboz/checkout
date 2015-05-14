@@ -101,11 +101,13 @@ class CheckoutProcess
 	 *
 	 * @param  string  $slug
 	 * @param  string  $binding
+	 * @param  string  $label
 	 * @return void
 	 */
-	public function add($slug, $binding)
+	public function add($slug, $binding, $label = null)
 	{
 		$this->screens[$slug] = $binding;
+		$this->screenLabels[$slug] = $label ?: $binding;
 		$this->screenIdentifiers[] = $slug;
 	}
 
@@ -222,7 +224,7 @@ class CheckoutProcess
 	{
 		$menu = [];
 
-		foreach($this->screens as $screen => $class) {
+		foreach($this->screenLabels as $screen => $label) {
 			$active = ($currentScreenIdentifier == $screen);
 			if ($this->isValidScreen($screen)) {
 				$menu[] = sprintf('<a href="%s" class="%s">%s</a>',
@@ -231,10 +233,10 @@ class CheckoutProcess
 						$active ? 'selected' : '',
 						$this->isScreenComplete($screen) ? 'complete' : 'active'
 					]),
-					$class
+					$label
 				);
 			} else {
-				$menu[] = $active ? '<span class="selected">' . $class . '</span>' : $class;
+				$menu[] = $active ? '<span class="selected">' . $label . '</span>' : $label;
 			}
 		}
 
