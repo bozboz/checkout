@@ -32,8 +32,6 @@ $checkout->add('billing', 'IframeBilling', 'Payment');
 $checkout->add('complete', 'OrderCompleted');
 ```
 
-Screens must extend `Bozboz\Ecommerce\Checkout\Screen` and must define a view() method.
-
 The above example will respond to the following URLs:
 
 	GET /checkout
@@ -46,6 +44,12 @@ The above example will respond to the following URLs:
 	POST /checkout/billing
 	GET /checkout/complete
 	POST /checkout/complete
+
+### Screens
+
+Screens must extend `Bozboz\Ecommerce\Checkout\Screen` and must define a view() method.
+
+Additionally, a `canSkip` method is supported, which must return a boolean. If this method returns `true`, the screen will be skipped in the process.
 
 
 ### Processing the screen
