@@ -8,12 +8,16 @@ class CheckoutServiceProvider extends ServiceProvider
 	{
 		$this->app->singleton(
 			'checkout',
-			'Bozboz\Ecommerce\Checkout\CheckoutProcess'
+			'Bozboz\Ecommerce\Checkout\CheckoutRouter'
 		);
 
 		$this->app->bind(CheckoutController::class, function($app)
 		{
-			return new CheckoutController($app['checkout']);
+			$currentRoute = $app['router']->current();
+
+			$process = $app['checkout']->getProcess($currentRoute);
+
+			return new CheckoutController($process);
 		});
 	}
 }

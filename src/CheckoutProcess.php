@@ -2,7 +2,6 @@
 
 use Illuminate\Session\Store;
 use Illuminate\Routing\Redirector;
-use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
 
 class CheckoutProcess
@@ -16,11 +15,6 @@ class CheckoutProcess
 	 * @var Illuminate\Routing\Redirector
 	 */
 	protected $redirect;
-
-	/**
-	 * @var Illuminate\Routing\Router
-	 */
-	protected $route;
 
 	/**
 	 * @var Illuminate\Routing\UrlGenerator
@@ -45,54 +39,32 @@ class CheckoutProcess
 	/**
 	 * @var string
 	 */
-	protected $urlPrefix = 'checkout';
-
-	/**
-	 * @var string
-	 */
-	protected $viewAction = 'Bozboz\Ecommerce\Checkout\CheckoutController@view';
-
-	/**
-	 * @var string
-	 */
-	protected $processAction = 'Bozboz\Ecommerce\Checkout\CheckoutController@process';
+	protected $routeAlias;
 
 	/**
 	 * Retrieve and set the completed screens from session
 	 *
 	 * @param Illuminate\Session\Store  $store
 	 * @param Illuminate\Routing\Redirector  $redirector
-	 * @param Illuminate\Routing\Router  $router
 	 * @param Illuminate\Routing\UrlGenerator  $url
 	 */
-	public function __construct(Store $store, Redirector $redirector, Router $router, UrlGenerator $url)
+	public function __construct(Store $store, Redirector $redirector, UrlGenerator $url)
 	{
 		$this->store = $store;
 		$this->redirect = $redirector;
-		$this->route = $router;
 		$this->url = $url;
-
-		$this->registerRoutes();
 
 		$this->completedScreens = $this->store->get('completed_screens', []);
 	}
 
 	/**
-	 * Register routes for checkout
+	 * Set route alias of the process, for generating URLs
 	 *
-	 * @return void
+	 * @param  string  $alias
 	 */
-	protected function registerRoutes()
+	public function setRouteAlias($alias)
 	{
-		$params = [
-			'prefix' => $this->urlPrefix
-		];
-
-		$this->route->group($params, function()
-		{
-			$this->route->get('{screen?}', $this->viewAction);
-			$this->route->post('{screen?}', $this->processAction);
-		});
+		$this->routeAlias = $alias;
 	}
 
 	/**
@@ -166,8 +138,11 @@ class CheckoutProcess
 	 */
 	public function viewScreen($identifier)
 	{
-		return $this->getScreen($identifier)->view()
-		 . $this->renderMenu($identifier);
+		return $this->getScreen($identifier)->view()->with([
+			'screens' => $this->screenLabels,
+			'checkout' => $this,
+			'currentScreen' => $identifier
+		]);
 	}
 
 	/**
@@ -241,6 +216,17 @@ class CheckoutProcess
 	}
 
 	/**
+	 * Get the URL to a screen, using its identifier
+	 *
+	 * @param  string  $identifier
+	 * @return string
+	 */
+	public function urlToScreen($identifier)
+	{
+		return $this->url->route($this->routeAlias, [$identifier]);
+	}
+
+	/**
 	 * Render a menu
 	 *
 	 * @param  string  $identifier
@@ -254,7 +240,7 @@ class CheckoutProcess
 			$active = ($currentScreenIdentifier == $screen);
 			if ($this->isValidScreen($screen)) {
 				$menu[] = sprintf('<a href="%s" class="%s">%s</a>',
-					$this->url->action($this->viewAction, [$screen]),
+					$this->urlToScreen($screen),
 					implode(' ', [
 						$active ? 'selected' : '',
 						$this->isScreenComplete($screen) ? 'complete' : 'active'
@@ -283,6 +269,6 @@ class CheckoutProcess
 	 */
 	protected function redirectTo($identifier)
 	{
-		return $this->redirect->action($this->viewAction, $identifier);
+		return $this->redirect->route($this->routeAlias, $identifier);
 	}
 }
