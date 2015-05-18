@@ -227,41 +227,6 @@ class CheckoutProcess
 	}
 
 	/**
-	 * Render a menu
-	 *
-	 * @param  string  $identifier
-	 * @return string
-	 */
-	protected function renderMenu($currentScreenIdentifier)
-	{
-		$menu = [];
-
-		foreach($this->screenLabels as $screen => $label) {
-			$active = ($currentScreenIdentifier == $screen);
-			if ($this->isValidScreen($screen)) {
-				$menu[] = sprintf('<a href="%s" class="%s">%s</a>',
-					$this->urlToScreen($screen),
-					implode(' ', [
-						$active ? 'selected' : '',
-						$this->isScreenComplete($screen) ? 'complete' : 'active'
-					]),
-					$label
-				);
-			} else {
-				$menu[] = $active ? '<span class="selected">' . $label . '</span>' : $label;
-			}
-		}
-
-		return '<p>' . implode(" | " . PHP_EOL, $menu) . '</p>'
-		 . '<style type="text/css">
-		 	a { padding: 2px 4px; color: #FFF }
-		 	.selected { font-weight: bold; text-decoration: none }
-		 	.complete { background: green }
-		 	.active { background: orange }
-		 </style>';
-	}
-
-	/**
 	 * Redirect to a screen, by its identifier
 	 *
 	 * @param  string  $identifier
