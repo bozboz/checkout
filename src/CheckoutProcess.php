@@ -53,8 +53,6 @@ class CheckoutProcess
 		$this->store = $store;
 		$this->redirect = $redirector;
 		$this->url = $url;
-
-		$this->completedScreens = $this->store->get('completed_screens', []);
 	}
 
 	/**
@@ -65,6 +63,7 @@ class CheckoutProcess
 	public function setRouteAlias($alias)
 	{
 		$this->routeAlias = $alias;
+		$this->completedScreens = $this->store->get($alias . '.completed_screens', []);
 	}
 
 	/**
@@ -209,7 +208,7 @@ class CheckoutProcess
 		}
 
 		if ( ! in_array($identifier, $this->completedScreens)) {
-			$this->store->push('completed_screens', $identifier);
+			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
 		}
 
 		return $this->redirectToNextScreen($identifier);
