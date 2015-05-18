@@ -229,10 +229,8 @@ class CheckoutProcess
 	{
 		try {
 			$response = $this->getScreen($identifier)->process();
-		} catch (\Exception $e) {
-			return $this->redirect->back()->withErrors([
-				'error' => $e->getMessage()
-			])->withInput();
+		} catch (ValidationException $e) {
+			return $this->redirect->back()->withErrors($e->getErrors())->withInput();
 		}
 
 		if ( ! in_array($identifier, $this->completedScreens)) {
