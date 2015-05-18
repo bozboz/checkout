@@ -34,6 +34,19 @@ $checkout->add('complete', 'OrderCompleted');
 
 Screens must extend `Bozboz\Ecommerce\Checkout\Screen` and must define a view() method.
 
+The above example will respond to the following URLs:
+
+	GET /checkout
+	POST /checkout
+	GET /checkout/customer
+	POST /checkout/customer
+	GET /checkout/address
+	POST /checkout/address
+	GET /checkout/billing
+	POST /checkout/billing
+	GET /checkout/complete
+	POST /checkout/complete
+
 
 ### Processing the screen
 
