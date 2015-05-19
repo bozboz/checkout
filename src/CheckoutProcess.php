@@ -233,6 +233,6 @@ class CheckoutProcess
 	 */
 	protected function redirectTo($identifier)
 	{
-		return $this->redirect->route($this->routeAlias, $identifier);
+		return $this->redirect->to($this->urlToScreen($identifier));
 	}
 }
