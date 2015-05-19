@@ -1,8 +1,19 @@
 {
 	"name": "bozboz/checkout",
+	"authors": [
+		{
+			"name": "Sam King",
+			"email": "sam@bozboz.co.uk"
+		}
+	],
 	"autoload": {
 		"psr-4": {
 			"Bozboz\\Ecommerce\\Checkout\\": "src"
 		}
+	},
+	"require": {
+		"illuminate/routing": "4.2.*",
+		"illuminate/session": "4.2.*",
+		"illuminate/support": "4.2.*"
 	}
 }
