@@ -1,5 +1,7 @@
 <?php namespace Bozboz\Ecommerce\Checkout;
 
+use Closure;
+
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
 use Illuminate\Routing\Route;
@@ -42,18 +44,21 @@ class CheckoutRouter
 	 *
 	 * @param  string  $prefix
 	 * @param  array  $params
-	 * @return Bozboz\Ecommerce\Checkout\CheckoutProcess
+	 * @return void
 	 */
-	public function register($prefix, array $groupParams = [], array $config = [])
+	public function register(array $groupParams, Closure $closure)
 	{
-		$groupParams['prefix'] = $prefix;
-
-		$this->registerRoutes($groupParams, new Collection($config));
+		$prefix = $groupParams['prefix'];
 
 		$process = $this->app->make('Bozboz\Ecommerce\Checkout\CheckoutProcess');
 		$process->setRouteAlias($prefix);
 
-		return $this->processes[$prefix] = $process;
+		$this->processes[$prefix] = $process;
+
+		$this->router->group($groupParams, function() use ($closure, $process)
+		{
+			$closure($process);
+		});
 	}
 
 	/**
@@ -65,27 +70,5 @@ class CheckoutRouter
 	public function getProcess(Route $route)
 	{
 		return $this->processes[$route->getPrefix()];
-	}
-
-	/**
-	 * Register view/process routes for a process
-	 *
-	 * @param  array  $params
-	 * @param  Illuminate\Support\Collection  $config
-	 * @return void
-	 */
-	protected function registerRoutes($params, Collection $config)
-	{
-		$this->router->group($params, function() use ($params, $config)
-		{
-			$this->router->get('{screen?}', [
-				'uses' => $config->get('view_action', $this->controller . '@view'),
-				'as' => $params['prefix']
-			]);
-
-			$this->router->post('{screen?}', [
-				'uses' => $config->get('process_action', $this->controller . '@process')
-			]);
-		});
 	}
 }

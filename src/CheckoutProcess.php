@@ -1,8 +1,10 @@
 <?php namespace Bozboz\Ecommerce\Checkout;
 
-use Illuminate\Session\Store;
 use Illuminate\Routing\Redirector;
+use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
+use Illuminate\Session\Store;
+use Illuminate\Support\Collection;
 
 class CheckoutProcess
 {
@@ -20,6 +22,11 @@ class CheckoutProcess
 	 * @var Illuminate\Routing\UrlGenerator
 	 */
 	protected $url;
+
+	/**
+	 * @var Illuminate\Routing\Router
+	 */
+	protected $router;
 
 	/**
 	 * @var array
@@ -42,17 +49,17 @@ class CheckoutProcess
 	protected $routeAlias;
 
 	/**
-	 * Retrieve and set the completed screens from session
-	 *
 	 * @param Illuminate\Session\Store  $store
 	 * @param Illuminate\Routing\Redirector  $redirector
 	 * @param Illuminate\Routing\UrlGenerator  $url
+	 * @param Illuminate\Routing\Router  $router
 	 */
-	public function __construct(Store $store, Redirector $redirector, UrlGenerator $url)
+	public function __construct(Store $store, Redirector $redirector, UrlGenerator $url, Router $router)
 	{
 		$this->store = $store;
 		$this->redirect = $redirector;
 		$this->url = $url;
+		$this->router = $router;
 	}
 
 	/**
@@ -67,19 +74,50 @@ class CheckoutProcess
 	}
 
 	/**
-	 * Add a screen to the checkout process, identified by its slug and IoC
-	 * binding, or concrete class.
+	 * Add a screen to the checkout process, registering a route, identified by
+	 * its slug and IoC binding, or concrete class.
 	 *
 	 * @param  string  $slug
 	 * @param  string  $binding
 	 * @param  string  $label
+	 * @param  array  $params
 	 * @return void
 	 */
-	public function add($slug, $binding, $label = null)
+	public function add($slug, $binding, $label = null, $params = [])
 	{
 		$this->screens[$slug] = $binding;
 		$this->screenLabels[$slug] = $label ?: $binding;
 		$this->screenIdentifiers[] = $slug;
+
+		$params = $this->formParameters($params, ['view', 'process']);
+
+		$defaultController = 'Bozboz\Ecommerce\Checkout\CheckoutController';
+
+		$this->router->get($slug, [
+			'uses' => $defaultController . '@view',
+			'as' => $this->getScreenAlias($slug)
+		] + $params['view']);
+
+		$this->router->post($slug, [
+			'uses' => $defaultController . '@process'
+		] + $params['process']);
+	}
+
+	/**
+	 * Form a parameters array into a new array indexed by the provided $toForm
+	 * parameter
+	 *
+	 * @param  array  $params
+	 * @param  array  $toForm
+	 * @return array
+	 */
+	protected function formParameters(array $params, array $toForm)
+	{
+		if (array_intersect(array_keys($params), $toForm)) {
+			return array_merge(array_fill_keys($toForm, []), $params);
+		} else {
+			return array_fill_keys($toForm, $params);
+		}
 	}
 
 	/**
@@ -175,6 +213,10 @@ class CheckoutProcess
 	 */
 	public function redirectToNextScreen($identifier)
 	{
+		if ( ! in_array($identifier, $this->completedScreens)) {
+			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
+		}
+
 		$index = array_search($identifier, $this->screenIdentifiers);
 
 		$nextScreen = $this->screenIdentifiers[$index + 1];
@@ -194,10 +236,14 @@ class CheckoutProcess
 	}
 
 	/**
-	 * Process the screen, using its identifier
+	 * Process the screen, using its identifier.
+	 *
+	 * - If a ValidationException is thrown, redirect back with errors
+	 * - Unless the screen's process() method returns something (not null), the
+	 *   user will be automatically redirected to the next screen
 	 *
 	 * @param  string  $identifier
-	 * @return Illiminate\Http\RedirectResponse
+	 * @return Illiminate\Http\RedirectResponse|mixed
 	 */
 	public function processScreen($identifier)
 	{
@@ -207,11 +253,11 @@ class CheckoutProcess
 			return $this->redirect->back()->withErrors($e->getErrors())->withInput();
 		}
 
-		if ( ! in_array($identifier, $this->completedScreens)) {
-			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
+		if (is_null($response)) {
+			return $this->redirectToNextScreen($identifier);
 		}
 
-		return $this->redirectToNextScreen($identifier);
+		return $response;
 	}
 
 	/**
@@ -222,7 +268,18 @@ class CheckoutProcess
 	 */
 	public function urlToScreen($identifier)
 	{
-		return $this->url->route($this->routeAlias, [$identifier]);
+		return $this->url->route($this->getScreenAlias($identifier));
+	}
+
+	/**
+	 * Get the alias for a screen, from its identifier
+	 *
+	 * @param  string  $identifier
+	 * @return string
+	 */
+	protected function getScreenAlias($identifier)
+	{
+		return $this->routeAlias . ($identifier === '/' ? '' : '.' . $identifier);
 	}
 
 	/**

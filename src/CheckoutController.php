@@ -13,8 +13,10 @@ class CheckoutController extends Controller
 		$this->checkout = $checkout;
 	}
 
-	public function view($screen = '/')
+	public function view()
 	{
+		$screen = $this->getScreenFromRoute();
+
 		if ( ! $this->checkout->screenExists($screen)) {
 			throw new NotFoundHttpException;
 		}
@@ -32,6 +34,8 @@ class CheckoutController extends Controller
 
 	public function process($screen = '/')
 	{
+		$screen = $this->getScreenFromRoute();
+
 		if ( ! $this->checkout->screenExists($screen)) {
 			throw new NotFoundHttpException;
 		}
@@ -41,5 +45,14 @@ class CheckoutController extends Controller
 		}
 
 		return $this->checkout->processScreen($screen);
+	}
+
+	protected function getScreenFromRoute()
+	{
+		$route = \Route::current();
+
+		$screenIdentifier = trim(str_replace($route->getPrefix(), '', $route->getPath()), '/');
+
+		return $screenIdentifier ?: '/';
 	}
 }

@@ -12,27 +12,27 @@ Define a series of interconnecting screens that plug together as part of a conti
 ## Usage
 
 	1) Register a new checkout process using the Checkout facade
-	2) On the returned object, call `add` to add screens. The add method takes 3 parameters:
+	2) On the returned object, call `add` to add screens. The add method takes 4 parameters:
 		a) The URL the screen will respond to
 		b) The Screen class to use (resolved out the IoC container)
 		c) An optional additional label to identify the screen
+		d) Route parameters (uses, as, before, etc.)
 
 
 For example:
 
 ```
-$checkout = Checkout::register('checkout', [
-	'before' => ['my.before.filter'],
-]);
-
-$checkout->add('/', 'LoginOrRegister', 'Start');
-$checkout->add('customer', 'CustomerDetails', 'Personal Info');
-$checkout->add('address', 'AddressSelection', 'Addresses');
-$checkout->add('billing', 'IframeBilling', 'Payment');
-$checkout->add('complete', 'OrderCompleted');
+$checkout = Checkout::register(['prefix' => 'checkout'], function($checkout)
+{
+	$checkout->add('/', 'LoginOrRegister', 'Start');
+	$checkout->add('customer', 'CustomerDetails', 'Personal Info');
+	$checkout->add('address', 'AddressSelection', 'Addresses');
+	$checkout->add('billing', 'IframeBilling', 'Payment');
+	$checkout->add('complete', 'OrderCompleted');
+});
 ```
 
-The above example will respond to the following URLs:
+The above example will register the following URLs:
 
 	GET /checkout
 	POST /checkout
