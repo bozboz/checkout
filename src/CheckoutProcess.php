@@ -279,7 +279,13 @@ class CheckoutProcess
 	 */
 	protected function getScreenAlias($identifier)
 	{
-		return $this->routeAlias . ($identifier === '/' ? '' : '.' . $identifier);
+		$alias = [$this->routeAlias];
+
+		if ($identifier !== '/') {
+			$alias[] = $identifier;
+		}
+
+		return implode('.', $alias);
 	}
 
 	/**
