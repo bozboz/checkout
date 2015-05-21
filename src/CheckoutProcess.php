@@ -206,25 +206,6 @@ class CheckoutProcess
 	}
 
 	/**
-	 * Redirect to next screen
-	 *
-	 * @param  string  $identifier
-	 * @return Illiminate\Http\RedirectResponse
-	 */
-	public function redirectToNextScreen($identifier)
-	{
-		if ( ! in_array($identifier, $this->completedScreens)) {
-			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
-		}
-
-		$index = array_search($identifier, $this->screenIdentifiers);
-
-		$nextScreen = $this->screenIdentifiers[$index + 1];
-
-		return $this->redirectTo($nextScreen);
-	}
-
-	/**
 	 * Determine if screen, by its identifier, can be processed
 	 *
 	 * @param  string  $identifier
@@ -239,8 +220,8 @@ class CheckoutProcess
 	 * Process the screen, using its identifier.
 	 *
 	 * - If a ValidationException is thrown, redirect back with errors
-	 * - Unless the screen's process() method returns something (not null), the
-	 *   user will be automatically redirected to the next screen
+	 * - Otheriwse, mark the screen as complete
+	 * - Determine the next screen, and redirect to it
 	 *
 	 * @param  string  $identifier
 	 * @return Illiminate\Http\RedirectResponse|mixed
@@ -250,14 +231,19 @@ class CheckoutProcess
 		try {
 			$response = $this->getScreen($identifier)->process();
 		} catch (ValidationException $e) {
-			return $this->redirect->back()->withErrors($e->getErrors())->withInput();
+			return $this->redirectTo($identifier)->withErrors($e->getErrors())->withInput();
 		}
 
-		if (is_null($response)) {
-			return $this->redirectToNextScreen($identifier);
+		$this->markScreenAsComplete($identifier);
+
+		$nextScreen = $this->getNextScreen($identifier);
+
+		while($this->canSkipScreen($nextScreen)) {
+			$this->markScreenAsComplete($nextScreen);
+			$nextScreen = $this->getNextScreen($nextScreen);
 		}
 
-		return $response;
+		return $this->redirectTo($nextScreen);
 	}
 
 	/**
@@ -269,6 +255,19 @@ class CheckoutProcess
 	public function urlToScreen($identifier)
 	{
 		return $this->url->route($this->getScreenAlias($identifier));
+	}
+
+	/**
+	 * Mark screen as complete
+	 *
+	 * @param  string  $identifier
+	 * @return void
+	 */
+	protected function markScreenAsComplete($identifier)
+	{
+		if ( ! in_array($identifier, $this->completedScreens)) {
+			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
+		}
 	}
 
 	/**
@@ -297,5 +296,18 @@ class CheckoutProcess
 	protected function redirectTo($identifier)
 	{
 		return $this->redirect->to($this->urlToScreen($identifier));
+	}
+
+	/**
+	 * Get the next screen from the current screen's identifier
+	 *
+	 * @param  string  $identifier
+	 * @return string
+	 */
+	protected function getNextScreen($identifier)
+	{
+		$index = array_search($identifier, $this->screenIdentifiers);
+
+		return $this->screenIdentifiers[$index + 1];
 	}
 }

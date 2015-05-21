@@ -25,10 +25,6 @@ class CheckoutController extends Controller
 			return $this->checkout->redirectToActiveScreen();
 		}
 
-		if ($this->checkout->canSkipScreen($screen)) {
-			return $this->checkout->redirectToNextScreen($screen);
-		}
-
 		return $this->checkout->viewScreen($screen);
 	}
 
