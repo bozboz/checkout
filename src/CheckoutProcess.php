@@ -236,6 +236,8 @@ class CheckoutProcess
 
 		$this->markScreenAsComplete($identifier);
 
+		if ( ! is_null($response)) return $response;
+
 		$nextScreen = $this->getNextScreen($identifier);
 
 		while($this->canSkipScreen($nextScreen)) {
