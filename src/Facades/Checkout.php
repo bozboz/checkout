@@ -1,4 +1,6 @@
-<?php namespace Bozboz\Ecommerce\Checkout\Facades;
+<?php
+
+namespace Bozboz\Ecommerce\Checkout\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

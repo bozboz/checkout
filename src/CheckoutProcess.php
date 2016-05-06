@@ -1,4 +1,6 @@
-<?php namespace Bozboz\Ecommerce\Checkout;
+<?php
+
+namespace Bozboz\Ecommerce\Checkout;
 
 use Illuminate\Routing\Redirector;
 use Illuminate\Routing\Router;
@@ -42,6 +44,11 @@ class CheckoutProcess
 	 * @var array
 	 */
 	protected $completedScreens = [];
+
+	/**
+	 * @var string
+	 */
+	protected $defaultController = 'Bozboz\Ecommerce\Checkout\CheckoutController';
 
 	/**
 	 * @var string
@@ -91,15 +98,13 @@ class CheckoutProcess
 
 		$params = $this->formParameters($params, ['view', 'process']);
 
-		$defaultController = 'Bozboz\Ecommerce\Checkout\CheckoutController';
-
 		$this->router->get($slug, [
-			'uses' => $defaultController . '@view',
+			'uses' => $this->defaultController . '@view',
 			'as' => $this->getScreenAlias($slug)
 		] + $params['view']);
 
 		$this->router->post($slug, [
-			'uses' => $defaultController . '@process'
+			'uses' => $this->defaultController . '@process'
 		] + $params['process']);
 	}
 

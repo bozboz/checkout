@@ -1,4 +1,6 @@
-<?php namespace Bozboz\Ecommerce\Checkout;
+<?php
+
+namespace Bozboz\Ecommerce\Checkout;
 
 abstract class Screen
 {
