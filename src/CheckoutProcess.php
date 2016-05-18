@@ -77,7 +77,6 @@ class CheckoutProcess
 	public function setRouteAlias($alias)
 	{
 		$this->routeAlias = $alias;
-		$this->completedScreens = $this->store->get($alias . '.completed_screens', []);
 	}
 
 	/**
@@ -144,7 +143,7 @@ class CheckoutProcess
 	 */
 	public function isValidScreen($identifier)
 	{
-		$screensCompleted = count($this->completedScreens);
+		$screensCompleted = count($this->getCompletedScreens());
 		$index = array_search($identifier, $this->screenIdentifiers);
 
 		return $index === 0 OR $index <= $screensCompleted;
@@ -169,7 +168,7 @@ class CheckoutProcess
 	 */
 	public function isScreenComplete($identifier)
 	{
-		return in_array($identifier, $this->completedScreens);
+		return in_array($identifier, $this->getCompletedScreens());
 	}
 
 	/**
@@ -205,7 +204,7 @@ class CheckoutProcess
 	 */
 	public function redirectToActiveScreen()
 	{
-		$activeScreen = $this->screenIdentifiers[count($this->completedScreens)];
+		$activeScreen = $this->screenIdentifiers[count($this->getCompletedScreens())];
 
 		return $this->redirectTo($activeScreen);
 	}
@@ -272,9 +271,20 @@ class CheckoutProcess
 	 */
 	protected function markScreenAsComplete($identifier)
 	{
-		if ( ! in_array($identifier, $this->completedScreens)) {
+		if ( ! in_array($identifier, $this->getCompletedScreens())) {
 			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
 		}
+	}
+
+	/**
+	 * Fetch completed screens from the session
+	 *
+	 * @return array
+	 */
+	protected function getCompletedScreens()
+	{
+		static $completedScreens;
+		return $completedScreens ?: $completedScreens = $this->store->get($this->routeAlias . '.completed_screens', []);
 	}
 
 	/**
