@@ -1,7 +1,8 @@
 <?php
 
-namespace Bozboz\Ecommerce\Checkout;
+namespace Bozboz\Ecommerce\Checkout\Providers;
 
+use Bozboz\Ecommerce\Checkout\CheckoutController;
 use Illuminate\Support\ServiceProvider;
 
 class CheckoutServiceProvider extends ServiceProvider
