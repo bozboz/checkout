@@ -2,19 +2,14 @@
 
 namespace Bozboz\Ecommerce\Checkout;
 
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Routing\Redirector;
 use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
-use Illuminate\Session\Store;
-use Illuminate\Support\Collection;
+use Bozboz\Ecommerce\Orders\OrderRepository;
 
 class CheckoutProcess
 {
-	/**
-	 * @var Illuminate\Session\Store
-	 */
-	protected $store;
-
 	/**
 	 * @var Illuminate\Routing\Redirector
 	 */
@@ -26,9 +21,9 @@ class CheckoutProcess
 	protected $url;
 
 	/**
-	 * @var Illuminate\Routing\Router
+	 * @var Illuminate\Container\Container
 	 */
-	protected $router;
+	protected $container;
 
 	/**
 	 * @var array
@@ -48,153 +43,108 @@ class CheckoutProcess
 	/**
 	 * @var string
 	 */
-	protected $defaultController = 'Bozboz\Ecommerce\Checkout\CheckoutController';
-
-	/**
-	 * @var string
-	 */
 	protected $routeAlias;
 
 	/**
-	 * @param Illuminate\Session\Store  $store
 	 * @param Illuminate\Routing\Redirector  $redirector
 	 * @param Illuminate\Routing\UrlGenerator  $url
 	 * @param Illuminate\Routing\Router  $router
 	 */
-	public function __construct(Store $store, Redirector $redirector, UrlGenerator $url, Router $router)
+	public function __construct(Container $container, Redirector $redirector, UrlGenerator $url)
 	{
-		$this->store = $store;
+		$this->container = $container;
 		$this->redirect = $redirector;
 		$this->url = $url;
-		$this->router = $router;
 	}
 
-	/**
-	 * Set route alias of the process, for generating URLs
-	 *
-	 * @param  string  $alias
-	 */
-	public function setRouteAlias($alias)
+	public function setRepository($repo)
 	{
-		$this->routeAlias = $alias;
+		$this->repo = $repo;
 	}
 
 	/**
 	 * Add a screen to the checkout process, registering a route, identified by
-	 * its slug and IoC binding, or concrete class.
+	 * its alias and IoC binding, or concrete class.
 	 *
-	 * @param  string  $slug
+	 * @param  string  $alias
 	 * @param  string  $binding
 	 * @param  string  $label
-	 * @param  array  $params
 	 * @return void
 	 */
-	public function add($slug, $binding, $label = null, $params = [])
+	public function addScreen($alias, $binding, $label = null)
 	{
-		$this->screens[$slug] = $binding;
-		$this->screenLabels[$slug] = $label ?: $binding;
-		$this->screenIdentifiers[] = $slug;
-
-		$params = $this->formParameters($params, ['view', 'process']);
-
-		$this->router->get($slug, [
-			'uses' => $this->defaultController . '@view',
-			'as' => $this->getScreenAlias($slug)
-		] + $params['view']);
-
-		$this->router->post($slug, [
-			'uses' => $this->defaultController . '@process'
-		] + $params['process']);
+		$this->screens[$alias] = $binding;
+		$this->screenLabels[$alias] = $label ?: $binding;
+		$this->screenIdentifiers[] = $alias;
 	}
 
 	/**
-	 * Form a parameters array into a new array indexed by the provided $toForm
-	 * parameter
+	 * Check if screen exists, by its screenAlias
 	 *
-	 * @param  array  $params
-	 * @param  array  $toForm
-	 * @return array
-	 */
-	protected function formParameters(array $params, array $toForm)
-	{
-		if (array_intersect(array_keys($params), $toForm)) {
-			return array_merge(array_fill_keys($toForm, []), $params);
-		} else {
-			return array_fill_keys($toForm, $params);
-		}
-	}
-
-	/**
-	 * Check if screen exists, by its identifier
-	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return boolean
 	 */
-	public function screenExists($identifier)
+	public function screenExists($screenAlias)
 	{
-		return array_key_exists($identifier, $this->screens);
+		return array_key_exists($screenAlias, $this->screens);
 	}
 
 	/**
-	 * Check if screen is valid, by its identifier
+	 * Check if screen is valid, by its screenAlias
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return boolean
 	 */
-	public function isValidScreen($identifier)
+	public function canAccessScreen($order, $screenAlias)
 	{
-		$screensCompleted = count($this->getCompletedScreens());
-		$index = array_search($identifier, $this->screenIdentifiers);
+		$requestedIndex = $this->getScreenIndex($screenAlias);
 
-		return $index === 0 OR $index <= $screensCompleted;
+		$currentIndex = $this->getNextScreenIndex($order->getCompletedScreen());
+
+		return $requestedIndex <= $currentIndex;
 	}
 
 	/**
-	 * Check if screen can be skipped, by its identifier
+	 * Check if screen can be skipped, by its screenAlias
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return boolean
 	 */
-	public function canSkipScreen($identifier)
+	public function canSkipScreen($screenAlias)
 	{
-		return $this->getScreen($identifier)->canSkip();
+		return $this->getScreen($screenAlias)->canSkip();
 	}
 
 	/**
-	 * Check if screen is complete, by its identifier
+	 * Render the screen's response, using its screenAlias
 	 *
-	 * @param  string  $identifier
-	 * @return boolean
-	 */
-	public function isScreenComplete($identifier)
-	{
-		return in_array($identifier, $this->getCompletedScreens());
-	}
-
-	/**
-	 * Render the screen's response, using its identifier
-	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return mixed
 	 */
-	public function viewScreen($identifier)
+	public function viewScreen($screenAlias)
 	{
-		return $this->getScreen($identifier)->view()->with([
+		$order = $this->repo->lookupOrder();
+
+		if ( ! $order || ! $this->canAccessScreen($order, $screenAlias)) {
+			throw InvalidScreenException($screenAlias);
+		}
+
+		return $this->getScreen($screenAlias)->view($order)->with([
 			'screens' => $this->screenLabels,
 			'checkout' => $this,
-			'currentScreen' => $identifier
+			'currentScreen' => $screenAlias
 		]);
 	}
 
 	/**
 	 * Resolve the screen from the IoC container
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return mixed
 	 */
-	public function getScreen($identifier)
+	public function getScreen($screenAlias)
 	{
-		return app($this->screens[$identifier]);
+		return $this->container->make($this->screens[$screenAlias]);
 	}
 
 	/**
@@ -202,50 +152,66 @@ class CheckoutProcess
 	 *
 	 * @return Illiminate\Http\RedirectResponse
 	 */
-	public function redirectToActiveScreen()
+	public function redirectToStart()
 	{
-		$activeScreen = $this->screenIdentifiers[count($this->getCompletedScreens())];
+		$activeScreen = reset($this->screenIdentifiers);
 
 		return $this->redirectTo($activeScreen);
 	}
 
 	/**
-	 * Determine if screen, by its identifier, can be processed
+	 * Determine if screen, by its screenAlias, can be processed
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return boolean
 	 */
-	public function canProcess($identifier)
+	public function canProcessScreen($screenAlias)
 	{
-		return $this->getScreen($identifier) instanceof Processable;
+		return $this->getScreen($screenAlias) instanceof Processable;
 	}
 
 	/**
-	 * Process the screen, using its identifier.
+	 * Process the screen, using its screenAlias.
 	 *
 	 * - If a ValidationException is thrown, redirect back with errors
 	 * - Otheriwse, mark the screen as complete
 	 * - Determine the next screen, and redirect to it
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return Illiminate\Http\RedirectResponse|mixed
 	 */
-	public function processScreen($identifier)
+	public function processScreen($screenAlias)
 	{
-		try {
-			$response = $this->getScreen($identifier)->process();
-		} catch (ValidationException $e) {
-			return $this->redirectTo($identifier)->withErrors($e->getErrors())->withInput();
+		$screen = $this->getScreen($screenAlias);
+
+		if ($this->repo->hasOrder()) {
+			$order = $this->repo->lookupOrder();
+		} else {
+			$order = $screen->lookupOrder();
 		}
 
-		$this->markScreenAsComplete($identifier);
+		if ( ! $order) {
+			throw new CannotProcessException;
+		}
+
+		if ( ! $this->canAccessScreen($order, $screenAlias)) {
+			throw new InvalidScreenException($screenAlias);
+		}
+
+		try {
+			$response = $screen->process($order);
+		} catch (ValidationException $e) {
+			return $this->redirectTo($screenAlias)->withErrors($e->getErrors())->withInput();
+		}
+
+		$this->markScreenAsComplete($order, $screenAlias);
 
 		if ( ! is_null($response)) return $response;
 
-		$nextScreen = $this->getNextScreen($identifier);
+		$nextScreen = $this->getNextScreen($screenAlias);
 
 		while($this->canSkipScreen($nextScreen)) {
-			$this->markScreenAsComplete($nextScreen);
+			$this->markScreenAsComplete($order, $nextScreen);
 			$nextScreen = $this->getNextScreen($nextScreen);
 		}
 
@@ -253,78 +219,65 @@ class CheckoutProcess
 	}
 
 	/**
-	 * Get the URL to a screen, using its identifier
+	 * Get the URL to a screen, using its screenAlias
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return string
 	 */
-	public function urlToScreen($identifier)
+	public function urlToScreen($screenAlias)
 	{
-		return $this->url->route($this->getScreenAlias($identifier));
+		return $this->url->route($screenAlias);
 	}
 
 	/**
-	 * Mark screen as complete
+	 * Mark screen as complete if it has not been reached before
 	 *
-	 * @param  string  $identifier
+	 * @param  Bozboz\Ecommerce\Orders\Order  $order
+	 * @param  string  $screenAlias
 	 * @return void
 	 */
-	protected function markScreenAsComplete($identifier)
+	protected function markScreenAsComplete($order, $screenAlias)
 	{
-		if ( ! in_array($identifier, $this->getCompletedScreens())) {
-			$this->store->push($this->routeAlias . '.completed_screens', $identifier);
+		$requestedIndex = $this->getScreenIndex($screenAlias);
+		$currentIndex = $this->getScreenIndex($order->getCompletedScreen());
+
+		if ($requestedIndex >= $currentIndex) {
+			$order->markScreenAsComplete($screenAlias);
 		}
 	}
 
 	/**
-	 * Fetch completed screens from the session
+	 * Redirect to a screen, by its screenAlias
 	 *
-	 * @return array
-	 */
-	protected function getCompletedScreens()
-	{
-		static $completedScreens;
-		return $completedScreens ?: $completedScreens = $this->store->get($this->routeAlias . '.completed_screens', []);
-	}
-
-	/**
-	 * Get the alias for a screen, from its identifier
-	 *
-	 * @param  string  $identifier
-	 * @return string
-	 */
-	protected function getScreenAlias($identifier)
-	{
-		$alias = [$this->routeAlias];
-
-		if ($identifier !== '/') {
-			$alias[] = $identifier;
-		}
-
-		return implode('.', $alias);
-	}
-
-	/**
-	 * Redirect to a screen, by its identifier
-	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return Illuminate\Http\RedirectResponse
 	 */
-	protected function redirectTo($identifier)
+	protected function redirectTo($screenAlias)
 	{
-		return $this->redirect->to($this->urlToScreen($identifier));
+		return $this->redirect->to($this->urlToScreen($screenAlias));
 	}
 
 	/**
-	 * Get the next screen from the current screen's identifier
+	 * Get the next screen from the current screen's screenAlias
 	 *
-	 * @param  string  $identifier
+	 * @param  string  $screenAlias
 	 * @return string
 	 */
-	protected function getNextScreen($identifier)
+	private function getNextScreen($screenAlias)
 	{
-		$index = array_search($identifier, $this->screenIdentifiers);
+		$nextIndex = $this->getNextScreenIndex($screenAlias);
 
-		return $this->screenIdentifiers[$index + 1];
+		return $this->screenIdentifiers[$nextIndex];
+	}
+
+	private function getScreenIndex($screenAlias)
+	{
+		return array_search($screenAlias, $this->screenIdentifiers);
+	}
+
+	private function getNextScreenIndex($screenAlias)
+	{
+		$index = $this->getScreenIndex($screenAlias);
+		return $index !== false ? $index + 1 : null;
 	}
 }

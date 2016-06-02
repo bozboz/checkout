@@ -4,7 +4,7 @@ namespace Bozboz\Ecommerce\Checkout;
 
 abstract class Screen
 {
-	abstract public function view();
+	abstract public function view($order);
 
 	/**
 	 * Determine if screen can be skipped

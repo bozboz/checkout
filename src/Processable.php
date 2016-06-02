@@ -4,5 +4,5 @@ namespace Bozboz\Ecommerce\Checkout;
 
 interface Processable
 {
-	public function process();
+	public function process($order);
 }

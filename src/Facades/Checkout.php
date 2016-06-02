@@ -8,6 +8,6 @@ class Checkout extends Facade
 {
 	static public function getFacadeAccessor()
 	{
-		return 'checkout';
+		return 'checkout.router';
 	}
 }

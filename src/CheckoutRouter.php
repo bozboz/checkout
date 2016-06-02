@@ -2,12 +2,10 @@
 
 namespace Bozboz\Ecommerce\Checkout;
 
-use Closure;
-
-use Illuminate\Foundation\Application;
-use Illuminate\Routing\Router;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Routing\Route;
-use Illuminate\Support\Collection;
+use Illuminate\Routing\Router;
+use Closure;
 
 class CheckoutRouter
 {
@@ -17,9 +15,9 @@ class CheckoutRouter
 	protected $router;
 
 	/**
-	 * @var Illuminate\Foundation\Application
+	 * @var Illuminate\Contracts\Container\Container
 	 */
-	protected $app;
+	protected $container;
 
 	/**
 	 * @var array
@@ -27,41 +25,47 @@ class CheckoutRouter
 	protected $processes = [];
 
 	/**
-	 * @var string
+	 * @var Bozboz\Ecommerce\Orders\OrderRepository
 	 */
-	protected $controller = 'Bozboz\Ecommerce\Checkout\CheckoutController';
+	protected $repo;
 
 	/**
 	 * @param Illuminate\Routing\Router  $router
-	 * @param Illuminate\Foundation\Application  $app
+	 * @param Illuminate\Contracts\Container\Container  $container
 	 */
-	public function __construct(Router $router, Application $app)
+	public function __construct(Container $container)
 	{
-		$this->router = $router;
-		$this->app = $app;
+		$this->container = $container;
 	}
 
-	/**
-	 * Register a new checkout process
-	 *
-	 * @param  string  $prefix
-	 * @param  array  $params
-	 * @return void
-	 */
-	public function register(array $groupParams, Closure $closure)
+	public function using($repo)
 	{
-		$prefix = $groupParams['prefix'];
-
-		$process = $this->app->make('Bozboz\Ecommerce\Checkout\CheckoutProcess');
-		$process->setRouteAlias($prefix);
-
-		$this->processes[$prefix] = $process;
-
-		$this->router->group($groupParams, function() use ($closure, $process)
-		{
-			$closure($process);
-		});
+		$this->repo = $repo;
+		return $this;
 	}
+
+    /**
+     * Register a new checkout process
+     *
+     * @param  string  $prefix
+     * @param  array  $params
+     * @return void
+     */
+    public function register(array $groupParams, Closure $closure)
+    {
+        $prefix = $groupParams['prefix'];
+
+        $process = $this->container->make('checkout.process');
+
+        $process->setRepository(
+            $this->container->make($this->repo)
+        );
+
+        $this->processes[$prefix] = $process;
+
+        $routeGroup = new RouteGroup($process, $prefix, $this->container->make('router'));
+        $routeGroup->register($groupParams, $closure);
+    }
 
 	/**
 	 * Get a registered process from a route
@@ -71,6 +75,6 @@ class CheckoutRouter
 	 */
 	public function getProcess(Route $route)
 	{
-		return $this->processes[$route->getPrefix()];
+		return $this->processes[ltrim($route->getPrefix(), '/')];
 	}
 }
