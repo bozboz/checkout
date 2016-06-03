@@ -2,19 +2,13 @@
 
 namespace Bozboz\Ecommerce\Checkout;
 
+use Bozboz\Ecommerce\Checkout\Checkoutable;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Routing\Redirector;
 use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
-use Bozboz\Ecommerce\Orders\OrderRepository;
 
 class CheckoutProcess
 {
-	/**
-	 * @var Illuminate\Routing\Redirector
-	 */
-	protected $redirect;
-
 	/**
 	 * @var Illuminate\Routing\UrlGenerator
 	 */
@@ -46,18 +40,16 @@ class CheckoutProcess
 	protected $routeAlias;
 
 	/**
-	 * @param Illuminate\Routing\Redirector  $redirector
 	 * @param Illuminate\Routing\UrlGenerator  $url
 	 * @param Illuminate\Routing\Router  $router
 	 */
-	public function __construct(Container $container, Redirector $redirector, UrlGenerator $url)
+	public function __construct(Container $container, UrlGenerator $url)
 	{
 		$this->container = $container;
-		$this->redirect = $redirector;
 		$this->url = $url;
 	}
 
-	public function setRepository($repo)
+	public function setRepository(Checkoutable $repo)
 	{
 		$this->repo = $repo;
 	}
@@ -99,7 +91,7 @@ class CheckoutProcess
 	{
 		$requestedIndex = $this->getScreenIndex($screenAlias);
 
-		$currentIndex = $this->getNextScreenIndex($order->getCompletedScreen());
+		$currentIndex = $this->getNextScreenIndex($this->repo->getCompletedScreen($order));
 
 		return $requestedIndex <= $currentIndex;
 	}
@@ -123,7 +115,7 @@ class CheckoutProcess
 	 */
 	public function viewScreen($screenAlias)
 	{
-		$order = $this->repo->lookupOrder();
+		$order = $this->repo->getCheckoutable();
 
 		if ( ! $order || ! $this->canAccessScreen($order, $screenAlias)) {
 			throw InvalidScreenException($screenAlias);
@@ -184,10 +176,10 @@ class CheckoutProcess
 	{
 		$screen = $this->getScreen($screenAlias);
 
-		if ($this->repo->hasOrder()) {
-			$order = $this->repo->lookupOrder();
+		if ($this->repo->hasCheckoutable()) {
+			$order = $this->repo->getCheckoutable();
 		} else {
-			$order = $screen->lookupOrder();
+			$order = $screen->getCheckoutable();
 		}
 
 		if ( ! $order) {
@@ -239,10 +231,10 @@ class CheckoutProcess
 	protected function markScreenAsComplete($order, $screenAlias)
 	{
 		$requestedIndex = $this->getScreenIndex($screenAlias);
-		$currentIndex = $this->getScreenIndex($order->getCompletedScreen());
+		$currentIndex = $this->getScreenIndex($this->repo->getCompletedScreen($order));
 
 		if ($requestedIndex >= $currentIndex) {
-			$order->markScreenAsComplete($screenAlias);
+			$this->repo->markScreenAsComplete($order, $screenAlias);
 		}
 	}
 

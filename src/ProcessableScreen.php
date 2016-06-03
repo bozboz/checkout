@@ -4,7 +4,7 @@ namespace Bozboz\Ecommerce\Checkout;
 
 abstract class ProcessableScreen extends Screen implements Processable
 {
-    public function lookupOrder()
+    public function getCheckoutable()
     {
         throw new CannotProcessException;
     }

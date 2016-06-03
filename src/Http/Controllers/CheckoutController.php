@@ -2,6 +2,7 @@
 
 namespace Bozboz\Ecommerce\Checkout\Http\Controllers;
 
+use Bozboz\Ecommerce\Checkout\CannotProcessException;
 use Bozboz\Ecommerce\Checkout\CheckoutProcess;
 use Illuminate\Routing\Controller;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
