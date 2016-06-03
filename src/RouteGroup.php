@@ -42,10 +42,7 @@ class RouteGroup
             'uses' => $this->defaultController . '@process',
             'as' => $alias,
         ] + $params['process']);
-debug([
-    $params['process'],
-    'DEBUG: /Z/finecut.jim/project/vendor/bozboz/checkout/src/RouteGroup.php:45',
-]);
+
         $this->process->addScreen($alias, $binding, $label);
     }
 

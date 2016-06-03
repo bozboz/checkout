@@ -4,11 +4,17 @@ namespace Bozboz\Ecommerce\Checkout;
 
 use Bozboz\Ecommerce\Checkout\Checkoutable;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Routing\Redirector;
 use Illuminate\Routing\Router;
 use Illuminate\Routing\UrlGenerator;
 
 class CheckoutProcess
 {
+	/**
+	 * @var Illuminate\Routing\Redirector
+	 */
+	protected $redirect;
+
 	/**
 	 * @var Illuminate\Routing\UrlGenerator
 	 */
@@ -40,12 +46,14 @@ class CheckoutProcess
 	protected $routeAlias;
 
 	/**
+	 * @param Illuminate\Routing\Redirector  $redirector
 	 * @param Illuminate\Routing\UrlGenerator  $url
 	 * @param Illuminate\Routing\Router  $router
 	 */
-	public function __construct(Container $container, UrlGenerator $url)
+	public function __construct(Container $container, Redirector $redirector, UrlGenerator $url)
 	{
 		$this->container = $container;
+		$this->redirect = $redirector;
 		$this->url = $url;
 	}
 
@@ -118,7 +126,7 @@ class CheckoutProcess
 		$order = $this->repo->getCheckoutable();
 
 		if ( ! $order || ! $this->canAccessScreen($order, $screenAlias)) {
-			throw InvalidScreenException($screenAlias);
+			throw new InvalidScreenException($screenAlias);
 		}
 
 		return $this->getScreen($screenAlias)->view($order)->with([
