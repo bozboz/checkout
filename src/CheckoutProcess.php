@@ -129,6 +129,11 @@ class CheckoutProcess
 			throw new InvalidScreenException($screenAlias);
 		}
 
+		$lastScreen = end($this->screenIdentifiers);
+		if ( ! $this->repo->canContinue($order) && $lastScreen !== $screenAlias) {
+			return $this->redirectTo($lastScreen);
+		}
+
 		return $this->getScreen($screenAlias)->view($order)->with([
 			'screens' => $this->screenLabels,
 			'checkout' => $this,
