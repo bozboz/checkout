@@ -57,7 +57,7 @@ class CheckoutProcess
 		$this->url = $url;
 	}
 
-	public function setRepository(Checkoutable $repo)
+	public function setRepository(CheckoutableRepository $repo)
 	{
 		$this->repo = $repo;
 	}
@@ -79,17 +79,6 @@ class CheckoutProcess
 	}
 
 	/**
-	 * Check if screen exists, by its screenAlias
-	 *
-	 * @param  string  $screenAlias
-	 * @return boolean
-	 */
-	public function screenExists($screenAlias)
-	{
-		return array_key_exists($screenAlias, $this->screens);
-	}
-
-	/**
 	 * Check if screen is valid, by its screenAlias
 	 *
 	 * @param  string  $screenAlias
@@ -98,7 +87,7 @@ class CheckoutProcess
 	public function canAccessScreen($order, $screenAlias)
 	{
 		$requestedIndex = $this->getScreenIndex($screenAlias);
-		$currentIndex = $this->getNextScreenIndex($this->repo->getCompletedScreen($order));
+		$currentIndex = $this->getNextScreenIndex($order->getCompletedScreen());
 
 		return $requestedIndex <= $currentIndex;
 	}
@@ -129,7 +118,7 @@ class CheckoutProcess
 		}
 
 		$lastScreen = end($this->screenIdentifiers);
-		if ( $this->repo->isComplete($order) && $screenAlias !== $lastScreen) {
+		if ( $order->isComplete() && $screenAlias !== $lastScreen) {
 			return $this->redirectTo($lastScreen);
 		}
 
@@ -246,10 +235,10 @@ class CheckoutProcess
 	protected function markScreenAsComplete($order, $screenAlias)
 	{
 		$requestedIndex = $this->getScreenIndex($screenAlias);
-		$currentIndex = $this->getScreenIndex($this->repo->getCompletedScreen($order));
+		$currentIndex = $this->getScreenIndex($order->getCompletedScreen());
 
 		if ($requestedIndex > $currentIndex) {
-			$this->repo->markScreenAsComplete($order, $screenAlias);
+			$order->markScreenAsComplete($screenAlias);
 		}
 	}
 
