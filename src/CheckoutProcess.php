@@ -237,7 +237,7 @@ class CheckoutProcess
 		$requestedIndex = $this->getScreenIndex($screenAlias);
 		$currentIndex = $this->getScreenIndex($order->getCompletedScreen());
 
-		if ($requestedIndex > $currentIndex) {
+		if ($requestedIndex >= $currentIndex) {
 			$order->markScreenAsComplete($screenAlias);
 		}
 	}
