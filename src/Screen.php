@@ -11,7 +11,7 @@ abstract class Screen
 	 *
 	 * @return boolean
 	 */
-	public function canSkip()
+	public function canSkip($order)
 	{
 		return false;
 	}

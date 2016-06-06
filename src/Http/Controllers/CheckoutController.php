@@ -23,19 +23,23 @@ class CheckoutController extends Controller
 
 		try {
 			return $this->checkout->viewScreen($screen);
+		} catch (EmptyCartException $e) {
+			return abort(500);
 		} catch (InvalidScreenException $e) {
 			return $this->checkout->redirectToStart();
 		}
 
 	}
 
-	public function process($screen = '/')
+	public function process()
 	{
 		$screen = $this->getScreenAliasFromRoute();
 
 		try {
 			return $this->checkout->processScreen($screen);
-		} catch (CannotProcessException $e) {
+		} catch (EmptyCartException $e) {
+			return abort(500);
+		} catch (InvalidScreenException $e) {
 			return $this->checkout->redirectToStart();
 		}
 	}

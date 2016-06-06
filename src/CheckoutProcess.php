@@ -98,7 +98,6 @@ class CheckoutProcess
 	public function canAccessScreen($order, $screenAlias)
 	{
 		$requestedIndex = $this->getScreenIndex($screenAlias);
-
 		$currentIndex = $this->getNextScreenIndex($this->repo->getCompletedScreen($order));
 
 		return $requestedIndex <= $currentIndex;
@@ -110,9 +109,9 @@ class CheckoutProcess
 	 * @param  string  $screenAlias
 	 * @return boolean
 	 */
-	public function canSkipScreen($screenAlias)
+	public function canSkipScreen($screenAlias, $order)
 	{
-		return $this->getScreen($screenAlias)->canSkip();
+		return $this->getScreen($screenAlias)->canSkip($order);
 	}
 
 	/**
@@ -125,13 +124,17 @@ class CheckoutProcess
 	{
 		$order = $this->repo->getCheckoutable();
 
-		if ( ! $order || ! $this->canAccessScreen($order, $screenAlias)) {
-			throw new InvalidScreenException($screenAlias);
+		if ( ! $order) {
+			throw new EmptyCartException;
 		}
 
 		$lastScreen = end($this->screenIdentifiers);
-		if ( ! $this->repo->canContinue($order) && $lastScreen !== $screenAlias) {
+		if ( $this->repo->isComplete($order) && $screenAlias !== $lastScreen) {
 			return $this->redirectTo($lastScreen);
+		}
+
+		if ( ! $this->canAccessScreen($order, $screenAlias)) {
+			throw new InvalidScreenException($screenAlias);
 		}
 
 		return $this->getScreen($screenAlias)->view($order)->with([
@@ -159,9 +162,8 @@ class CheckoutProcess
 	 */
 	public function redirectToStart()
 	{
-		$activeScreen = reset($this->screenIdentifiers);
-
-		return $this->redirectTo($activeScreen);
+		$firstScreen = reset($this->screenIdentifiers);
+		return $this->redirectTo($firstScreen);
 	}
 
 	/**
@@ -196,7 +198,7 @@ class CheckoutProcess
 		}
 
 		if ( ! $order) {
-			throw new CannotProcessException;
+			throw new EmptyCartException;
 		}
 
 		if ( ! $this->canAccessScreen($order, $screenAlias)) {
@@ -215,7 +217,7 @@ class CheckoutProcess
 
 		$nextScreen = $this->getNextScreen($screenAlias);
 
-		while($this->canSkipScreen($nextScreen)) {
+		while($this->canSkipScreen($nextScreen, $order)) {
 			$this->markScreenAsComplete($order, $nextScreen);
 			$nextScreen = $this->getNextScreen($nextScreen);
 		}
@@ -246,7 +248,7 @@ class CheckoutProcess
 		$requestedIndex = $this->getScreenIndex($screenAlias);
 		$currentIndex = $this->getScreenIndex($this->repo->getCompletedScreen($order));
 
-		if ($requestedIndex >= $currentIndex) {
+		if ($requestedIndex > $currentIndex) {
 			$this->repo->markScreenAsComplete($order, $screenAlias);
 		}
 	}
