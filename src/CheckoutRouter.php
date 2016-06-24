@@ -10,11 +10,6 @@ use Closure;
 class CheckoutRouter
 {
 	/**
-	 * @var Illuminate\Routing\Router
-	 */
-	protected $router;
-
-	/**
 	 * @var Illuminate\Contracts\Container\Container
 	 */
 	protected $container;
@@ -30,7 +25,6 @@ class CheckoutRouter
 	protected $repo;
 
 	/**
-	 * @param Illuminate\Routing\Router  $router
 	 * @param Illuminate\Contracts\Container\Container  $container
 	 */
 	public function __construct(Container $container)
