@@ -6,6 +6,7 @@ use Bozboz\Ecommerce\Checkout\CannotProcessException;
 use Bozboz\Ecommerce\Checkout\CheckoutProcess;
 use Bozboz\Ecommerce\Checkout\InvalidScreenException;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CheckoutController extends Controller
@@ -22,7 +23,7 @@ class CheckoutController extends Controller
 		$screen = $this->getScreenAliasFromRoute();
 
 		try {
-			return $this->checkout->viewScreen($screen);
+			return $this->checkout->viewScreen($screen, Request::has('redirect'));
 		} catch (EmptyCartException $e) {
 			return abort(500);
 		} catch (InvalidScreenException $e) {

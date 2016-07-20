@@ -107,9 +107,10 @@ class CheckoutProcess
 	 * Render the screen's response, using its screenAlias
 	 *
 	 * @param  string  $screenAlias
+	 * @param  boolean  $isRedirect
 	 * @return mixed
 	 */
-	public function viewScreen($screenAlias)
+	public function viewScreen($screenAlias, $isRedirect = false)
 	{
 		$order = $this->repo->getCheckoutable();
 
@@ -126,7 +127,11 @@ class CheckoutProcess
 			throw new InvalidScreenException($screenAlias);
 		}
 
-		return $this->getScreen($screenAlias)->view($order)->with([
+		$response = $this->getScreen($screenAlias)->view($order);
+
+		if ($isRedirect) return $response;
+
+		return $response->with([
 			'screens' => $this->screenLabels,
 			'checkout' => $this,
 			'currentScreen' => $screenAlias
