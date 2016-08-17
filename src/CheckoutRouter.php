@@ -69,9 +69,7 @@ class CheckoutRouter
 	 */
 	public function getProcess(Route $route)
 	{
-		$route = ltrim($route->getPrefix(), '/');
-		$route = ltrim(substr($route, strpos($route, '/')), '/');
-
-		return $this->processes[$route];
+        $prefixParts = explode('/', $route->getPrefix());
+		return $this->processes[end($prefixParts)];
 	}
 }
