@@ -26,7 +26,7 @@ class CheckoutController extends Controller
 		try {
 			return $this->checkout->viewScreen($screen, Request::has('redirect'));
 		} catch (EmptyCartException $e) {
-			return redirect('cart');
+			return redirect()->route('cart');
 		} catch (InvalidScreenException $e) {
 			return $this->checkout->redirectToStart();
 		}
@@ -40,7 +40,7 @@ class CheckoutController extends Controller
 		try {
 			return $this->checkout->processScreen($screen);
 		} catch (EmptyCartException $e) {
-			return redirect('cart');
+			return redirect()->route('cart');
 		} catch (InvalidScreenException $e) {
 			return $this->checkout->redirectToStart();
 		}
