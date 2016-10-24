@@ -4,6 +4,7 @@ namespace Bozboz\Ecommerce\Checkout\Http\Controllers;
 
 use Bozboz\Ecommerce\Checkout\CannotProcessException;
 use Bozboz\Ecommerce\Checkout\CheckoutProcess;
+use Bozboz\Ecommerce\Checkout\EmptyCartException;
 use Bozboz\Ecommerce\Checkout\InvalidScreenException;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Request;
@@ -25,7 +26,7 @@ class CheckoutController extends Controller
 		try {
 			return $this->checkout->viewScreen($screen, Request::has('redirect'));
 		} catch (EmptyCartException $e) {
-			return abort(500);
+			return redirect('cart');
 		} catch (InvalidScreenException $e) {
 			return $this->checkout->redirectToStart();
 		}
@@ -39,7 +40,7 @@ class CheckoutController extends Controller
 		try {
 			return $this->checkout->processScreen($screen);
 		} catch (EmptyCartException $e) {
-			return abort(500);
+			return redirect('cart');
 		} catch (InvalidScreenException $e) {
 			return $this->checkout->redirectToStart();
 		}
