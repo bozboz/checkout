@@ -185,10 +185,14 @@ class CheckoutProcess
 	{
 		$screen = $this->getScreen($screenAlias);
 
-		if ($this->repo->hasCheckoutable()) {
-			$order = $this->repo->getCheckoutable();
-		} else {
-			$order = $screen->getCheckoutable();
+		try {
+			if ($this->repo->hasCheckoutable()) {
+				$order = $this->repo->getCheckoutable();
+			} else {
+				$order = $screen->getCheckoutable();
+			}
+		} catch (CannotProcessException $e) {
+			return $this->redirectToStart();
 		}
 
 		if ( ! $order) {
