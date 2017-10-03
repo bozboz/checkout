@@ -84,7 +84,7 @@ class CheckoutProcess
 	 * @param  string  $screenAlias
 	 * @return boolean
 	 */
-	public function canAccessScreen($order, $screenAlias)
+	public function canAccessScreen(Checkoutable $order, $screenAlias)
 	{
 		$requestedIndex = $this->getScreenIndex($screenAlias);
 		$currentIndex = $this->getNextScreenIndex($order->getCompletedScreen());
