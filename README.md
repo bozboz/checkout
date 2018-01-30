@@ -5,45 +5,56 @@ Define a series of interconnecting screens that plug together as part of a conti
 
 ## Setup
 
-	1) Add the `Bozboz\Ecommerce\Checkout\CheckoutServiceProvider` service provider in app/config/app.php
-	2) Add the `Checkout` facade (`Bozboz\Ecommerce\Checkout\Facades\Checkout`) to the aliases array in `in app/config/app.php
-
+1. Require the package in Composer, by running `composer require bozboz/checkout`
+2. Add the service provider in app/config/app.php
+```
+    Bozboz\Ecommerce\Checkout\Providers\CheckoutServiceProvider::class,
+```
+3. Add the `Checkout` facade to the aliases array in `in app/config/app.php
+```
+    'Checkout' => Bozboz\Ecommerce\Checkout\Facades\Checkout::class,
+```
 
 ## Usage
 
-	1) Register a new checkout process using the Checkout facade
-	2) On the returned object, call `add` to add screens. The add method takes 4 parameters:
-		a) The URL the screen will respond to
-		b) The Screen class to use (resolved out the IoC container)
-		c) An optional additional label to identify the screen
-		d) Route parameters (uses, as, before, etc.)
+1. Register a new checkout process using the Checkout facade in `app/Http/routes.php`
+2. Set a repository on the facade with the `using` method. The repository must implement the `Bozboz\Ecommerce\Checkout\CheckoutableRepository` interface and its purpose is to fetch the checkoutable instance. (The orders package has a default implementation to fetch the order instance from the session, `Bozboz\Ecommerce\Orders\OrderRepository`).
+3. On the returned object, call `add` to add screens. The add method takes 4 parameters:
+    1. The URL the screen will respond to
+    2. The Screen class to use (resolved out the IoC container)
+    3. An optional additional label to identify the screen, primarily used in the progress bar
+    4. Route parameters (uses, as, before, etc.)
 
 
-For example:
+e.g.:
 
-```
-$checkout = Checkout::register(['prefix' => 'checkout'], function($checkout)
+```php
+<?php
+Checkout::using('App\Ecommerce\Orders\OrderRepository')->register(['prefix' => 'checkout'], function($checkout)
 {
-	$checkout->add('/', 'LoginOrRegister', 'Start');
-	$checkout->add('customer', 'CustomerDetails', 'Personal Info');
-	$checkout->add('address', 'AddressSelection', 'Addresses');
-	$checkout->add('billing', 'IframeBilling', 'Payment');
-	$checkout->add('complete', 'OrderCompleted');
+    $checkout->add('/', 'App\Screens\Start', 'Start');
+    $checkout->add('customer', 'App\Screens\CustomerDetails', 'Personal Info');
+    $checkout->add('address', 'App\Screens\AddressSelection', 'Addresses');
+    $checkout->add('delivery', 'App\Screens\ShippingSelection', 'Delivery');
+    $checkout->add('billing', 'App\Screens\IframeBilling', 'Payment');
+    $checkout->add('complete', 'App\Screens\OrderCompleted', 'Complete');
 });
 ```
 
 The above example will register the following URLs:
 
-	GET /checkout
-	POST /checkout
-	GET /checkout/customer
-	POST /checkout/customer
-	GET /checkout/address
-	POST /checkout/address
-	GET /checkout/billing
-	POST /checkout/billing
-	GET /checkout/complete
-	POST /checkout/complete
+    GET  /checkout
+    POST /checkout
+    GET  /checkout/customer
+    POST /checkout/customer
+    GET  /checkout/address
+    POST /checkout/address
+    GET  /checkout/delivery
+    POST /checkout/delivery
+    GET  /checkout/billing
+    POST /checkout/billing
+    GET  /checkout/complete
+    POST /checkout/complete
 
 ### Screens
 
@@ -54,6 +65,6 @@ Additionally, a `canSkip` method is supported, which must return a boolean. If t
 
 ### Processing the screen
 
-To define a processing action on the screen (hit when the screen URL is POSTed to, the screen class must implement `Bozboz\Ecommerce\Checkout\Processable`. This interface requires a process() method be defined.
+To define a processing action (hit when the screen URL is POSTed to) the screen class must implement `Bozboz\Ecommerce\Checkout\Processable`. This interface requires a `process()` method be defined.
 
 Providing this method does not throw an instance of `Bozboz\Ecommerce\Checkout\ValidationException`, the checkout process will progress to the next screen upon completion.
