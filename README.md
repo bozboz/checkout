@@ -2,15 +2,23 @@
 
 Define a series of interconnecting screens that plug together as part of a continuous process.
 
+For examples of implementation look at these repos:
+
+1. http://gitlab.lab/bozboz/finecut
+2. http://gitlab.lab/bozboz/drusillas
+3. http://gitlab.lab/bozboz/benton
+
 
 ## Setup
 
 1. Require the package in Composer, by running `composer require bozboz/checkout`
 2. Add the service provider in app/config/app.php
+
 ```
     Bozboz\Ecommerce\Checkout\Providers\CheckoutServiceProvider::class,
 ```
-3. Add the `Checkout` facade to the aliases array in `in app/config/app.php
+3. Add the `Checkout` facade to the aliases array in `in app/config/app.php`
+
 ```
     'Checkout' => Bozboz\Ecommerce\Checkout\Facades\Checkout::class,
 ```
