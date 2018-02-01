@@ -26,7 +26,7 @@ For examples of implementation look at these repos:
 ## Usage
 
 1. Register a new checkout process using the Checkout facade in `app/Http/routes.php`
-2. Set a repository on the facade with the `using` method. The repository must implement the `Bozboz\Ecommerce\Checkout\CheckoutableRepository` interface and its purpose is to fetch the checkoutable instance. (The orders package has a default implementation to fetch the order instance from the session, `Bozboz\Ecommerce\Orders\OrderRepository`).
+2. Set a repository on the facade with the `using` method. The repository must implement the `Bozboz\Ecommerce\Checkout\CheckoutableRepository` interface and its purpose is to fetch the checkoutable instance. The instance must implement the Checkoutable interface. (The orders package has a default implementation to fetch the order instance from the session, `Bozboz\Ecommerce\Orders\OrderRepository`).
 3. On the returned object, call `add` to add screens. The add method takes 4 parameters:
     1. The URL the screen will respond to
     2. The Screen class to use (resolved out the IoC container)
