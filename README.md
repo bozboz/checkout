@@ -76,3 +76,14 @@ Additionally, a `canSkip` method is supported, which must return a boolean. If t
 To define a processing action (hit when the screen URL is POSTed to) the screen class must implement `Bozboz\Ecommerce\Checkout\Processable`. This interface requires a `process()` method be defined.
 
 Providing this method does not throw an instance of `Bozboz\Ecommerce\Checkout\ValidationException`, the checkout process will progress to the next screen upon completion.
+
+
+## Troubleshooting
+
+When using test payments, if you get a 500 Internal Server Error upon clicking 'Take my money', try excluding the checkout/billing route from csrf protection.  
+In App\Http\Middleware\VerifyCsrfToken, add
+```php
+    protected $except = [
+        'checkout/billing',
+    ];
+```
